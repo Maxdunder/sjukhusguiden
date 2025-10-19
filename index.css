@@ -1,0 +1,32 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #111;
+    font-family: sans-serif;
+}
+
+#progress-container {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 16px;
+    z-index: 10;
+}
+
+#controls {
+    position: absolute;
+    top: 50px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 10;
+}
+
+#controls button {
+    padding: 5px 10px;
+    font-size: 14px;
+    cursor: pointer;
+}
