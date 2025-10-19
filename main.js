@@ -4,7 +4,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ===== Renderer =====
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.shadowMap.enabled = true;
@@ -24,8 +23,8 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
 controls.enableZoom = true;
-controls.minDistance = 5;
-controls.maxDistance = 100;
+controls.minDistance = 1;
+controls.maxDistance = 500;
 controls.update();
 
 // ===== Ground =====
@@ -60,85 +59,90 @@ scene.add(dirLight.target);
 // ===== Load Sundsvalls sjukhus =====
 const loader = new GLTFLoader();
 loader.load('./sundsvallssjukhus.gltf', (gltf) => {
-  const model = gltf.scene;
-  model.traverse((child) => {
-    if (child.isMesh) {
-      child.castShadow = true;
-      child.receiveShadow = true;
-    }
-  });
-  model.position.set(0, 0, 0);
-  model.scale.set(1, 1, 1);
-  scene.add(model);
-  document.getElementById('progress-container').style.display = 'none';
+    const model = gltf.scene;
+    model.traverse((child) => {
+        if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+        }
+    });
+    model.position.set(0, 0, 0);
+    model.scale.set(1,1,1);
+    scene.add(model);
+    document.getElementById('progress-container').style.display = 'none';
 }, (xhr) => {
-  document.getElementById('progress-container').textContent = `Laddar ${Math.round(xhr.loaded / xhr.total * 100)}%`;
+    document.getElementById('progress-container').textContent = `Laddar ${Math.round(xhr.loaded / xhr.total * 100)}%`;
 }, (error) => {
-  console.error(error);
+    console.error(error);
 });
 
 // ===== Marker =====
-const markerGeo = new THREE.SphereGeometry(0.15, 16, 16);
+const markerGeo = new THREE.SphereGeometry(0.2, 16, 16);
 const markerMat = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
 const marker = new THREE.Mesh(markerGeo, markerMat);
+marker.position.y = 0.5; // höjd ovanför marken
 scene.add(marker);
 
 // ===== Compass line =====
 const compassLine = new THREE.Line(
-  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]),
-  new THREE.LineBasicMaterial({ color: 0xff0000 })
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-1)]),
+    new THREE.LineBasicMaterial({ color: 0xffd700 }) // gul linje
 );
 marker.add(compassLine);
 
 // ===== GPS =====
-const BASE_LAT = 62.3900;
-const BASE_LON = 17.3060;
-const SCALE_FACTOR = 1000;
-
 if ('geolocation' in navigator) {
-  navigator.geolocation.watchPosition(
-    (position) => {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
+    navigator.geolocation.watchPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
 
-      const modelX = (lon - BASE_LON) * SCALE_FACTOR;
-      const modelZ = (lat - BASE_LAT) * SCALE_FACTOR;
+            const BASE_LAT = 62.3900;
+            const BASE_LON = 17.3060;
+            let SCALE = 50; // justera tills markören hamnar över modellen
 
-      marker.position.set(modelX, 0, modelZ);
-      controls.target.copy(marker.position);
-    },
-    (error) => {
-      console.warn('GPS error:', error);
-    },
-    { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
-  );
+            const x = (lon - BASE_LON) * SCALE;
+            const z = (lat - BASE_LAT) * SCALE;
+
+            marker.position.set(x, 0.5, z);
+            console.log(`GPS Marker Position -> x: ${x}, z: ${z}`);
+        },
+        (error) => {
+            console.warn('GPS error:', error);
+        },
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
+    );
 } else {
-  console.warn('Geolocation not available');
+    console.warn('Geolocation not available');
 }
 
-// ===== Resize =====
+// ===== Device Orientation / Gyro =====
+if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', (event) => {
+        let alpha = event.alpha ? THREE.MathUtils.degToRad(event.alpha) : 0;
+        // Rotera marker runt y-axeln så att linjen pekar åt den riktning användaren står mot
+        marker.rotation.y = alpha;
+    }, true);
+} else {
+    console.warn('Device orientation not supported');
+}
+
+// ===== Window resize =====
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // ===== Animate =====
 function animate() {
-  requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
 
-  // Kamera följer marker
-  const camOffset = new THREE.Vector3(5, 5, 5);
-  const desiredCamPos = new THREE.Vector3().addVectors(marker.position, camOffset);
-  camera.position.lerp(desiredCamPos, 0.05);
-  controls.target.lerp(marker.position, 0.05);
+    // Rutnätsgolv-effekt
+    grid.material.opacity = 0.5 + 0.5*Math.sin(Date.now()*0.002);
+    grid.material.transparent = true;
 
-  // Rutnätsgolv-effekt
-  grid.material.opacity = 0.5 + 0.5 * Math.sin(Date.now() * 0.002);
-  grid.material.transparent = true;
-
-  controls.update();
-  renderer.render(scene, camera);
+    controls.update();
+    renderer.render(scene, camera);
 }
 animate();
-
