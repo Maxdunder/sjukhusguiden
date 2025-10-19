@@ -31,7 +31,7 @@ controls.maxPolarAngle = Math.PI;
 controls.target.set(0, 1, 0);
 controls.update();
 
-// ===== Ground (grått plan) =====
+// ===== Ground =====
 const groundGeometry = new THREE.PlaneGeometry(50, 50);
 groundGeometry.rotateX(-Math.PI / 2);
 const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, side: THREE.DoubleSide });
@@ -42,7 +42,7 @@ scene.add(groundMesh);
 
 // ===== Grid (tydlig golveffekt) =====
 const grid = new THREE.GridHelper(50, 50, 0x888888, 0x444444);
-grid.position.y = -0.99; // precis ovanför golvet
+grid.position.y = -0.99;
 scene.add(grid);
 
 // ===== Lights =====
@@ -64,18 +64,15 @@ scene.add(dirLight.target);
 const loader = new GLTFLoader();
 loader.load('sundsvalls_sjukhus.gltf', (gltf) => {
   const model = gltf.scene;
-
   model.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true;
       child.receiveShadow = true;
     }
   });
-
   model.position.set(0, 0, 0);
   model.scale.set(1, 1, 1);
   scene.add(model);
-
   document.getElementById('progress-container').style.display = 'none';
 }, (xhr) => {
   document.getElementById('progress-container').textContent = `Laddar ${Math.round(xhr.loaded / xhr.total * 100)}%`;
@@ -89,9 +86,16 @@ const markerMat = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
 const marker = new THREE.Mesh(markerGeo, markerMat);
 scene.add(marker);
 
+// ===== Compass line =====
+const compassLine = new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-1)]),
+  new THREE.LineBasicMaterial({ color: 0xff0000 })
+);
+marker.add(compassLine); // linjen följer markören
+
 // ===== GPS Setup =====
-const BASE_LAT = 62.3900;   // Ange exakt latitud för sjukhusets referenspunkt
-const BASE_LON = 17.3060;   // Ange exakt longitud för sjukhusets referenspunkt
+const BASE_LAT = 62.3900;   // Ange exakt latitud för referenspunkt
+const BASE_LON = 17.3060;   // Ange exakt longitud för referenspunkt
 const SCALE_FACTOR = 1000;   // Justera så att GPS motsvarar modellens enheter
 
 if ('geolocation' in navigator) {
@@ -100,7 +104,6 @@ if ('geolocation' in navigator) {
       const lat = position.coords.latitude;
       const lon = position.coords.longitude;
 
-      // Konvertera GPS till modellkoordinater
       const modelX = (lon - BASE_LON) * SCALE_FACTOR;
       const modelZ = (lat - BASE_LAT) * SCALE_FACTOR;
 
@@ -144,7 +147,7 @@ function animate() {
   camera.position.lerp(desiredCamPos, 0.05);
   controls.target.lerp(marker.position, 0.05);
 
-  // Subtil puls på rutnätet för rörelse-effekt
+  // Puls på rutnät för rörelse-effekt
   grid.material.opacity = 0.5 + 0.5 * Math.sin(Date.now() * 0.002);
   grid.material.transparent = true;
 
