@@ -59,7 +59,7 @@ scene.add(dirLight.target);
 
 // ===== Load Sundsvalls sjukhus =====
 const loader = new GLTFLoader();
-loader.load('sundsvallssjukhus.gltf', (gltf) => {
+loader.load('./sundsvallssjukhus.gltf', (gltf) => {
   const model = gltf.scene;
   model.traverse((child) => {
     if (child.isMesh) {
@@ -141,3 +141,4 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
+
