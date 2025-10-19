@@ -23,14 +23,15 @@ camera.position.set(20, 30, 20);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
-controls.minDistance = 2;
+controls.enableZoom = true;      // tillåter zoom
+controls.minDistance = 5;
 controls.maxDistance = 100;
 controls.minPolarAngle = 0;
 controls.maxPolarAngle = Math.PI;
 controls.target.set(0, 1, 0);
 controls.update();
 
-// ===== Ground =====
+// ===== Ground (grått plan) =====
 const groundGeometry = new THREE.PlaneGeometry(50, 50);
 groundGeometry.rotateX(-Math.PI / 2);
 const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, side: THREE.DoubleSide });
@@ -38,6 +39,11 @@ const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
 groundMesh.position.y = -1;
 groundMesh.receiveShadow = true;
 scene.add(groundMesh);
+
+// ===== Grid (tydlig golveffekt) =====
+const grid = new THREE.GridHelper(50, 50, 0x888888, 0x444444);
+grid.position.y = -0.99; // precis ovanför golvet
+scene.add(grid);
 
 // ===== Lights =====
 const ambientLight = new THREE.AmbientLight(0xffffff, 3);
@@ -137,6 +143,10 @@ function animate() {
   const desiredCamPos = new THREE.Vector3().addVectors(marker.position, camOffset);
   camera.position.lerp(desiredCamPos, 0.05);
   controls.target.lerp(marker.position, 0.05);
+
+  // Subtil puls på rutnätet för rörelse-effekt
+  grid.material.opacity = 0.5 + 0.5 * Math.sin(Date.now() * 0.002);
+  grid.material.transparent = true;
 
   controls.update();
   renderer.render(scene, camera);
