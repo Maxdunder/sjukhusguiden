@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="utf-8">
+    <title>Sundsvalls Sjukhus 3D</title>
+
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@v0.163.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@v0.163.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <style>
+        body { margin:0; overflow:hidden; background:#111; }
+
+        #progress-container {
+            position:absolute;
+            top:10px; left:50%;
+            transform:translateX(-50%);
+            color:white; font-family:sans-serif;
+            z-index: 10;
+        }
+
+        #ui-container {
+            position:absolute;
+            top:10px;
+            left:10px;
+            display:flex;
+            flex-direction: column;
+            gap:5px;
+            z-index: 10;
+        }
+
+        #ui-container button {
+            font-size:14px;
+            padding:5px 10px;
+            background:#222;
+            color:white;
+            border:none;
+            border-radius:4px;
+            cursor:pointer;
+        }
+
+        #ui-container button:hover {
+            background:#444;
+        }
+    </style>
+</head>
+<body>
+
+<div id="progress-container">Laddar modell...</div>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>
